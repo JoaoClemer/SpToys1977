@@ -5,13 +5,16 @@ import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import * as schema from './schema'
 
-export type DB = BetterSQLite3Database<typeof schema>
+export type DB = BetterSQLite3Database<typeof schema> & { $client: Database.Database }
 
-let sqlite: Database.Database | null = null
 let db: DB | null = null
 
+export function getDataPath(): string {
+  return app.getPath('userData')
+}
+
 export function getDbPath(): string {
-  return join(app.getPath('userData'), 'sptoys.db')
+  return join(getDataPath(), 'sptoys.db')
 }
 
 function getMigrationsFolder(): string {
@@ -20,13 +23,28 @@ function getMigrationsFolder(): string {
     : join(app.getAppPath(), 'drizzle')
 }
 
-export function initDb(): DB {
-  if (db) return db
-  sqlite = new Database(getDbPath())
+/** Remove acentos e caixa: usado para busca ("maquina" encontra "Máquina") */
+export function normalizeText(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+}
+
+export function openDatabase(file: string, migrationsFolder: string): DB {
+  const sqlite = new Database(file)
   sqlite.pragma('journal_mode = WAL')
   sqlite.pragma('foreign_keys = ON')
-  db = drizzle(sqlite, { schema })
-  migrate(db, { migrationsFolder: getMigrationsFolder() })
+  sqlite.function('norm', { deterministic: true }, (s: unknown) =>
+    s == null ? null : normalizeText(String(s))
+  )
+  const instance = drizzle(sqlite, { schema })
+  migrate(instance, { migrationsFolder })
+  return instance
+}
+
+export function initDb(): DB {
+  if (!db) db = openDatabase(getDbPath(), getMigrationsFolder())
   return db
 }
 
@@ -35,8 +53,12 @@ export function getDb(): DB {
   return db
 }
 
+/** Usado pelos testes para injetar um banco em memória */
+export function setDb(instance: DB | null): void {
+  db = instance
+}
+
 export function closeDb(): void {
-  sqlite?.close()
-  sqlite = null
+  db?.$client.close()
   db = null
 }

@@ -1,12 +1,30 @@
-import { app } from 'electron'
-import type { IpcApi } from '../../shared/api'
-import { getDbPath } from '../db/client'
-import { productRepository } from '../repositories/products'
+import { app, BrowserWindow, shell } from 'electron'
+import { getDataPath, getDbPath } from '../db/client'
+import { backupService } from '../services/backup'
+import { dashboardService } from '../services/dashboard'
+import type { Handlers } from './types'
 
-export const appHandlers: Pick<IpcApi, 'app:info'> = {
+export const appHandlers: Handlers<
+  | 'app:info'
+  | 'app:openDataFolder'
+  | 'app:openExternal'
+  | 'dashboard:summary'
+  | 'backup:create'
+  | 'backup:restore'
+> = {
   'app:info': () => ({
     version: app.getVersion(),
-    dbPath: getDbPath(),
-    productCount: productRepository.count()
-  })
+    dataPath: getDataPath(),
+    dbPath: getDbPath()
+  }),
+  'app:openDataFolder': () => {
+    void shell.openPath(getDataPath())
+  },
+  'app:openExternal': (url) => {
+    if (!/^https:\/\//.test(url)) throw new Error('URL inválida')
+    void shell.openExternal(url)
+  },
+  'dashboard:summary': () => dashboardService.summary(),
+  'backup:create': () => backupService.create(BrowserWindow.getFocusedWindow()),
+  'backup:restore': () => backupService.restore(BrowserWindow.getFocusedWindow())
 }

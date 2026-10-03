@@ -4,6 +4,10 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { closeDb, initDb } from './db/client'
 import { registerIpc } from './ipc'
+import { productsService } from './services/products'
+import { cleanupOrphanPhotos, handlePhotoProtocol, registerPhotoScheme } from './services/photos'
+
+registerPhotoScheme()
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -47,7 +51,13 @@ app.whenReady().then(() => {
   })
 
   initDb()
+  handlePhotoProtocol()
   registerIpc()
+  try {
+    cleanupOrphanPhotos(productsService.allPhotoFiles())
+  } catch (err) {
+    console.error('[photos] limpeza falhou', err)
+  }
   createWindow()
 
   app.on('activate', function () {

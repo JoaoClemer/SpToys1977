@@ -1,13 +1,20 @@
 import { ipcMain } from 'electron'
-import type { IpcApi, IpcChannel, IpcResponse } from '../../shared/api'
+import { ZodError } from 'zod'
+import type { IpcChannel, IpcResponse } from '../../shared/api'
 import { appHandlers } from './app'
 import { productHandlers } from './products'
+import { salesHandlers } from './sales'
+import type { Handlers } from './types'
 
-type Handlers = { [C in IpcChannel]: (...args: Parameters<IpcApi[C]>) => ReturnType<IpcApi[C]> }
-
-const handlers: Handlers = {
+const handlers: Handlers<IpcChannel> = {
   ...appHandlers,
-  ...productHandlers
+  ...productHandlers,
+  ...salesHandlers
+}
+
+function errorMessage(err: unknown): string {
+  if (err instanceof ZodError) return err.issues.map((i) => i.message).join('; ')
+  return err instanceof Error ? err.message : String(err)
 }
 
 export function registerIpc(): void {
@@ -18,7 +25,7 @@ export function registerIpc(): void {
         return { ok: true, data }
       } catch (err) {
         console.error(`[ipc] ${channel}`, err)
-        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+        return { ok: false, error: errorMessage(err) }
       }
     })
   }
