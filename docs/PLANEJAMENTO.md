@@ -151,24 +151,21 @@ src/
   main/
     index.ts              # cria janela, registra IPC e protocolo de fotos
     db/
-      client.ts           # conexão better-sqlite3 + drizzle
+      client.ts           # conexão better-sqlite3 + drizzle, função norm() p/ busca sem acento
       schema.ts           # tabelas drizzle
-      migrations/
-    repositories/         # products, sales, customers
-    services/             # regras de negócio (vendas, estoque, fotos, backup)
+    services/             # regras de negócio + consultas (produtos, vendas, painel, fotos, backup)
     ipc/                  # handlers por domínio
   preload/
     index.ts              # expõe window.api
   shared/
     api.ts                # tipos da API IPC
-    schemas.ts            # schemas zod
+    schemas.ts            # schemas zod (validados no main)
     money.ts              # formatação BRL <-> centavos
-  renderer/
-    src/
-      routes/
-      components/
-      features/products | sales | dashboard | settings
-      lib/queryClient.ts
+  renderer/src/
+    components/           # ui.tsx (primitivos), domain.tsx, AppLayout
+    features/             # dashboard | products | sales | settings
+    lib/                  # ipc (hooks React Query), format, cx
+drizzle/                  # migrations SQL (geradas por drizzle-kit)
 ```
 
 ---
@@ -186,6 +183,26 @@ src/
 | **6. Distribuição** | electron-builder (.dmg / .exe), ícone, nome do app, auto-update opcional | 1–2 dias |
 
 Total estimado do MVP: **~2,5 a 3,5 semanas** de desenvolvimento focado.
+
+### Status (29/09/2026)
+
+Todas as fases do MVP foram implementadas:
+
+- [x] **0. Setup**
+- [x] **1. Produtos**: várias fotos com miniatura, busca sem acento, filtros, arquivar/excluir
+- [x] **2. Vendas**: baixa em transação, clientes com autocomplete, frete, edição, cancelamento
+- [x] **3. Entregas**: quadro de pendências com destaque de atraso, rastreio, desfazer status
+- [x] **4. Painel**: KPIs do mês com comparação, faturamento de 12 meses, pendências, últimas vendas, categorias, produtos parados, recém-adicionados
+- [x] **5. Robustez**: backup/restauração em zip, 24 testes dos serviços
+- [x] **6. Distribuição**: `.dmg` gerado e testado localmente; `.exe` gerado pelo workflow `.github/workflows/build.yml` numa máquina Windows do GitHub
+
+Mudanças em relação ao plano original:
+- **shadcn/ui** foi trocado por um conjunto próprio e enxuto de componentes Tailwind (`components/ui.tsx`). Evita dependências do Radix para o que o app precisa hoje.
+- A camada **repositories** foi unida aos **services**. As consultas são simples e ficam junto das regras.
+
+Pendente:
+- Ícone próprio do app. Hoje é o ícone padrão do Electron, em `build/icon.*`.
+- Testar o instalador Windows numa máquina real.
 
 ---
 

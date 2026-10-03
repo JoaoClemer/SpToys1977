@@ -1,0 +1,45 @@
+# Gera os instaladores de Windows (.exe) e macOS (.dmg).
+# Roda ao criar uma tag v* (ex.: v1.0.0) ou manualmente pela aba Actions.
+name: Build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - name: Instalador Windows
+        if: runner.os == 'Windows'
+        run: npm run build:win
+
+      - name: Instalador macOS
+        if: runner.os == 'macOS'
+        run: npm run build:mac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sptoys1977-${{ runner.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+          if-no-files-found: error
