@@ -1,9 +1,10 @@
 import { net, protocol } from 'electron'
 import { randomUUID } from 'crypto'
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs'
+import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
-import sharp from 'sharp'
+import sharp, { type Sharp } from 'sharp'
 import { getDataPath } from '../db/client'
 
 export const PHOTO_SCHEME = 'app-photo'
@@ -43,6 +44,28 @@ export function handlePhotoProtocol(): void {
   })
 }
 
+/** HEIC/HEIF (fotos de iPhone): marca do contêiner ISO-BMFF nos bytes 8-12 */
+function looksLikeHeic(buf: Buffer): boolean {
+  return ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1'].includes(
+    buf.subarray(8, 12).toString('latin1')
+  )
+}
+
+/**
+ * Abre a imagem com o sharp. O libvips distribuído com o sharp não decodifica HEVC
+ * (patentes), então HEIC é decodificado via libheif em WebAssembly e entregue
+ * ao sharp como pixels brutos. O libheif já aplica a rotação gravada na foto.
+ */
+async function openImage(src: string): Promise<Sharp> {
+  const buf = await readFile(src)
+  if (!looksLikeHeic(buf)) return sharp(buf, { failOn: 'error' }).rotate()
+  const { default: decodeHeic } = await import('heic-decode')
+  const { width, height, data } = await decodeHeic({ buffer: buf })
+  return sharp(Buffer.from(data.buffer, data.byteOffset, data.byteLength), {
+    raw: { width, height, channels: 4 }
+  })
+}
+
 /** Redimensiona, corrige orientação e salva foto + miniatura. Retorna os nomes gerados. */
 export async function importPhotos(paths: string[]): Promise<string[]> {
   const { full, thumb } = dirs()
@@ -50,7 +73,7 @@ export async function importPhotos(paths: string[]): Promise<string[]> {
   for (const src of paths) {
     const name = `${randomUUID()}.jpg`
     try {
-      const img = sharp(src, { failOn: 'error' }).rotate()
+      const img = await openImage(src)
       await img
         .clone()
         .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
