@@ -204,6 +204,14 @@ Pendente:
 - Ícone próprio do app. Hoje é o ícone padrão do Electron, em `build/icon.*`.
 - Testar o instalador Windows numa máquina real.
 
+### v1.1: senha de administrador e dados restritos (10/10/2026)
+
+- **Senha de administrador** em Configurações: cadastrar e alterar. Alterar exige a senha atual. Mínimo de 4 caracteres, guardada como hash scrypt na tabela `settings`.
+- **Dados restritos do produto:** preço de compra, preço máximo de negociação e observações internas, em colunas novas de `products`. A descrição pública continua igual.
+- Os dados só são entregues à tela pelos canais `products:getPrivate`/`setPrivate`, que exigem desbloqueio. O desbloqueio vale 5 minutos, fica só na memória do processo principal e acaba ao clicar em "Bloquear" ou ao fechar o app. As consultas comuns (produto, lista, vendas, painel) nunca incluem esses campos.
+- Migration `0001` é só aditiva (`CREATE TABLE settings` + 3× `ADD COLUMN` opcionais). Testada sobre banco v1.0 com dados e sobre uma cópia do banco real.
+- **Limite conhecido:** os valores ficam no banco sem criptografia. A senha protege contra quem usa o app, não contra quem abre o arquivo `sptoys.db` com uma ferramenta de banco de dados.
+
 ---
 
 ## 7. Ideias pós-MVP

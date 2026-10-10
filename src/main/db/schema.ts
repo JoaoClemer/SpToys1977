@@ -22,6 +22,12 @@ export const products = sqliteTable(
     /** Quantidade atual em estoque */
     quantity: integer('quantity').notNull().default(0),
     archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
+    // Dados restritos: só são lidos/gravados com a senha de administrador desbloqueada
+    /** Preço de compra em centavos */
+    purchasePrice: integer('purchase_price'),
+    /** Preço máximo de negociação em centavos */
+    negotiationLimit: integer('negotiation_limit_price'),
+    privateNotes: text('private_notes'),
     ...timestamps
   },
   (t) => [
@@ -101,6 +107,15 @@ export const sales = sqliteTable(
     )
   ]
 )
+
+/** Configurações gerais (chave/valor), ex.: hash da senha de administrador */
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`)
+})
 
 export type Product = typeof products.$inferSelect
 export type ProductPhoto = typeof productPhotos.$inferSelect

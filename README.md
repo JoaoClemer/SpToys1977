@@ -33,3 +33,13 @@ src/shared     tipos da API IPC e utilitários compartilhados
 src/renderer   interface React
 drizzle/       migrations SQL
 ```
+
+## Suporte: senha de administrador esquecida
+
+A senha protege os dados restritos dos produtos (preço de compra, preço máximo de negociação, observações internas). Se ela for esquecida, feche o app, faça uma cópia do `sptoys.db` e remova a senha:
+
+```bash
+sqlite3 sptoys.db "delete from settings where key = 'admin_password'"
+```
+
+Ao abrir o app de novo, cadastre uma nova senha em Configurações. Os dados restritos são mantidos.

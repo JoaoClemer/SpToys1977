@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { PageHeader } from '../../components/PageHeader'
 import { Button, Card } from '../../components/ui'
 import { ipc, useIpcQuery } from '../../lib/ipc'
+import { AdminPasswordCard } from '../admin/AdminPasswordCard'
 
 export function SettingsPage(): React.JSX.Element {
   const { data: info } = useIpcQuery('app:info')
@@ -22,7 +23,10 @@ export function SettingsPage(): React.JSX.Element {
 
   return (
     <>
-      <PageHeader title="Configurações" subtitle="Backup e dados do aplicativo" />
+      <PageHeader
+        title="Configurações"
+        subtitle="Backup, senha de administrador e dados do aplicativo"
+      />
       <div className="max-w-2xl space-y-6">
         <Card title="Backup">
           <p className="mb-4 text-sm text-stone-600">
@@ -61,6 +65,8 @@ export function SettingsPage(): React.JSX.Element {
             (subpasta “backups”) e o app reinicia.
           </p>
         </Card>
+
+        <AdminPasswordCard />
 
         <Card title="Dados">
           <dl className="space-y-2 text-sm">

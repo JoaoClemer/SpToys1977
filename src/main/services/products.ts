@@ -1,13 +1,16 @@
 import { and, asc, desc, eq, gt, sql, type SQL } from 'drizzle-orm'
-import type { ProductDetail, ProductListItem } from '../../shared/api'
+import type { ProductDetail, ProductListItem, ProductPrivate } from '../../shared/api'
 import {
   productFiltersSchema,
   productInputSchema,
+  productPrivateSchema,
   type ProductFilters,
-  type ProductInput
+  type ProductInput,
+  type ProductPrivateInput
 } from '../../shared/schemas'
 import { getDb, normalizeText } from '../db/client'
 import { productPhotos, products, sales } from '../db/schema'
+import { authService } from './auth'
 import { nowIso } from './dates'
 import { salesService } from './sales'
 
@@ -173,5 +176,33 @@ export const productsService = {
         .all()
         .map((r) => r.f)
     )
+  },
+
+  /** Dados restritos: só com a senha de administrador desbloqueada */
+  getPrivate(id: number): ProductPrivate {
+    authService.assertUnlocked()
+    const row = getDb()
+      .select({
+        purchasePrice: products.purchasePrice,
+        negotiationLimit: products.negotiationLimit,
+        privateNotes: products.privateNotes
+      })
+      .from(products)
+      .where(eq(products.id, id))
+      .get()
+    if (!row) throw new Error('Produto não encontrado')
+    return row
+  },
+
+  setPrivate(id: number, raw: ProductPrivateInput): ProductPrivate {
+    authService.assertUnlocked()
+    const input = productPrivateSchema.parse(raw)
+    const res = getDb()
+      .update(products)
+      .set({ ...input, updatedAt: nowIso() })
+      .where(eq(products.id, id))
+      .run()
+    if (res.changes === 0) throw new Error('Produto não encontrado')
+    return this.getPrivate(id)
   }
 }

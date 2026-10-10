@@ -87,3 +87,20 @@ export const markShippedSchema = z.object({
   shippedAt: isoDate
 })
 export type MarkShippedInput = z.input<typeof markShippedSchema>
+
+export const PASSWORD_MIN_LENGTH = 4
+/** Minutos que os dados restritos ficam liberados após digitar a senha */
+export const ADMIN_UNLOCK_MINUTES = 5
+
+export const adminPasswordSchema = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, `A senha precisa ter pelo menos ${PASSWORD_MIN_LENGTH} caracteres`)
+  .max(128, 'Senha muito longa')
+
+/** Dados restritos do produto (visíveis só com a senha de administrador) */
+export const productPrivateSchema = z.object({
+  purchasePrice: cents.nullable().default(null),
+  negotiationLimit: cents.nullable().default(null),
+  privateNotes: optionalText
+})
+export type ProductPrivateInput = z.input<typeof productPrivateSchema>

@@ -2,12 +2,14 @@ import { ipcMain } from 'electron'
 import { ZodError } from 'zod'
 import type { IpcChannel, IpcResponse } from '../../shared/api'
 import { appHandlers } from './app'
+import { authHandlers } from './auth'
 import { productHandlers } from './products'
 import { salesHandlers } from './sales'
 import type { Handlers } from './types'
 
 const handlers: Handlers<IpcChannel> = {
   ...appHandlers,
+  ...authHandlers,
   ...productHandlers,
   ...salesHandlers
 }

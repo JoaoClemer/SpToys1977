@@ -1,9 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
-import type { ProductDetail } from '../../../../shared/api'
+import { toast } from 'sonner'
+import type { ProductDetail, ProductPrivate } from '../../../../shared/api'
 import { Button, Field, Input, Modal, MoneyInput, Textarea } from '../../components/ui'
+import { useAdminActions } from '../../lib/admin'
 import { useIpcMutation, useIpcQuery } from '../../lib/ipc'
+import { PrivateFieldsSection } from '../admin/PrivateFieldsSection'
 import { PhotoManager } from './PhotoManager'
 
 interface FormValues {
@@ -38,6 +41,15 @@ export function ProductFormModal({
   const { data: categories = [] } = useIpcQuery('products:categories')
   const create = useIpcMutation('products:create', { success: 'Produto cadastrado' })
   const update = useIpcMutation('products:update', { success: 'Produto atualizado' })
+  const { savePrivate } = useAdminActions()
+  /** Dados restritos: null = seção bloqueada, nada é gravado */
+  const [privateData, setPrivateData] = useState<ProductPrivate | null>(null)
+  // Ao reabrir o modal, começa sempre com a seção restrita vazia/bloqueada
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) setPrivateData(null)
+  }
 
   const {
     register,
@@ -63,7 +75,7 @@ export function ProductFormModal({
     )
   }, [open, product, reset])
 
-  const onSubmit = handleSubmit((v) => {
+  const onSubmit = handleSubmit(async (v) => {
     const input = {
       name: v.name,
       category: v.category,
@@ -72,16 +84,23 @@ export function ProductFormModal({
       quantity: Number(v.quantity),
       photos: v.photos
     }
-    if (product) {
-      update.mutate([product.id, input], { onSuccess: onClose })
-    } else {
-      create.mutate([input], {
-        onSuccess: (p) => {
-          onClose()
-          navigate(`/estoque/${p.id}`)
-        }
-      })
+    let saved: ProductDetail
+    try {
+      saved = product
+        ? await update.mutateAsync([product.id, input])
+        : await create.mutateAsync([input])
+    } catch {
+      return // erro já exibido pelo useIpcMutation
     }
+    if (privateData) {
+      try {
+        await savePrivate(saved.id, privateData)
+      } catch (err) {
+        toast.error(`Produto salvo, mas os dados restritos não: ${(err as Error).message}`)
+      }
+    }
+    onClose()
+    if (!product) navigate(`/estoque/${saved.id}`)
   })
 
   const busy = create.isPending || update.isPending
@@ -163,6 +182,12 @@ export function ProductFormModal({
             render={({ field }) => <PhotoManager photos={field.value} onChange={field.onChange} />}
           />
         </div>
+
+        <PrivateFieldsSection
+          productId={product?.id}
+          value={privateData}
+          onChange={setPrivateData}
+        />
         <button type="submit" hidden />
       </form>
     </Modal>

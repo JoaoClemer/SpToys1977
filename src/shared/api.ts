@@ -8,6 +8,7 @@ import type {
   MarkShippedInput,
   ProductFilters,
   ProductInput,
+  ProductPrivateInput,
   SaleFilters,
   SaleInput,
   SaleUpdate
@@ -117,6 +118,19 @@ export interface DashboardSummary {
   recentProducts: ProductListItem[]
 }
 
+export interface AdminStatus {
+  hasPassword: boolean
+  unlocked: boolean
+  /** Epoch ms em que o desbloqueio expira */
+  expiresAt: number | null
+}
+
+export interface ProductPrivate {
+  purchasePrice: number | null
+  negotiationLimit: number | null
+  privateNotes: string | null
+}
+
 export interface BackupResult {
   path: string
   sizeBytes: number
@@ -134,6 +148,15 @@ export interface IpcApi {
   'products:setArchived': (id: number, archived: boolean) => void
   'products:delete': (id: number) => void
   'products:categories': () => string[]
+  /** Exigem a senha de administrador desbloqueada */
+  'products:getPrivate': (id: number) => ProductPrivate
+  'products:setPrivate': (id: number, input: ProductPrivateInput) => ProductPrivate
+
+  'auth:status': () => AdminStatus
+  /** Cria a senha (current = null) ou altera (exige a atual) */
+  'auth:setPassword': (current: string | null, next: string) => AdminStatus
+  'auth:unlock': (password: string) => AdminStatus
+  'auth:lock': () => AdminStatus
 
   /** Abre o seletor de arquivos e importa as fotos escolhidas */
   'photos:pick': () => string[]

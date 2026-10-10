@@ -1,6 +1,6 @@
 {
   "name": "sptoys1977",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Gestão de estoque e vendas para loja de antiguidades",
   "main": "./out/main/index.js",
   "author": "SpToys 1977",

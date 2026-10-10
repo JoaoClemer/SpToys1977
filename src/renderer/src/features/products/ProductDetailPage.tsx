@@ -14,6 +14,7 @@ import { Button, Card, ConfirmModal, EmptyState } from '../../components/ui'
 import { cx } from '../../lib/cx'
 import { formatCents, formatDate, photoUrl } from '../../lib/format'
 import { useIpcMutation, useIpcQuery } from '../../lib/ipc'
+import { PrivateDataCard } from '../admin/PrivateDataCard'
 import { SaleFormModal } from '../sales/SaleFormModal'
 import { ProductFormModal } from './ProductFormModal'
 
@@ -132,6 +133,8 @@ export function ProductDetailPage(): React.JSX.Element {
               <p className="text-sm whitespace-pre-wrap text-stone-700">{p.description}</p>
             </Card>
           )}
+
+          <PrivateDataCard productId={p.id} originalPrice={p.originalPrice} />
 
           <Card
             title="Histórico de vendas"

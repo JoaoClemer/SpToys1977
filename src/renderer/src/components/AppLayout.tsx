@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router'
 import { Toaster } from 'sonner'
 import { LayoutDashboard, Package, Receipt, Settings, Truck } from 'lucide-react'
 import { useIpcQuery } from '../lib/ipc'
+import { AdminSessionBadge } from '../features/admin/AdminSessionBadge'
 
 export function AppLayout(): React.JSX.Element {
   const { data } = useIpcQuery('dashboard:summary')
@@ -54,6 +55,7 @@ export function AppLayout(): React.JSX.Element {
             </NavLink>
           ))}
         </nav>
+        <AdminSessionBadge />
       </aside>
       <main ref={mainRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl p-8">
